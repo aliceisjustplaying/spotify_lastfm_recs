@@ -36,3 +36,4 @@ The normalized database is written to `music.db`.
 Reconciliation and QA add canonical track tables to `music.db` and local CSV/Markdown reports under `reports/`.
 Playlist weighting writes `playlist_weights` to SQLite and creates an ignored `playlist_weight_overrides.csv` for manual edits.
 Taste features write `taste_features` to SQLite plus first-pass profile and seed reports under `reports/`.
+Era boundaries are read from private local `taste_eras.json`, which is ignored by git.
