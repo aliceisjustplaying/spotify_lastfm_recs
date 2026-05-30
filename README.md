@@ -26,6 +26,9 @@ Run:
 ```bash
 python3 pull_spotify_playlists.py
 python3 normalize_music_data.py
+python3 reconcile_tracks.py
+python3 qa_reconciliation.py
 ```
 
 The normalized database is written to `music.db`.
+Reconciliation and QA add canonical track tables to `music.db` and local CSV/Markdown reports under `reports/`.
