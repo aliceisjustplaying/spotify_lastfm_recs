@@ -13,6 +13,22 @@ BRACKET_RE = re.compile(r"[\[(].*?(?:remaster(?:ed)?|deluxe|anniversary|bonus|ex
 FEAT_RE = re.compile(r"\s+(?:feat\.?|ft\.?|featuring)\s+.+$", re.I)
 PUNCT_RE = re.compile(r"[^\w\s]+", re.UNICODE)
 SPACE_RE = re.compile(r"\s+")
+GENERIC_TITLES = {
+    "intro",
+    "outro",
+    "interlude",
+    "prelude",
+    "theme",
+    "home",
+    "one",
+    "love",
+    "you",
+    "me",
+    "us",
+    "live",
+    "untitled",
+    "bonus track",
+}
 
 
 def norm(value):
@@ -42,6 +58,17 @@ def simple_key(artist, track):
     if not artist_key or not track_key:
         return None
     return f"{artist_key}|{track_key}"
+
+
+def safe_loose_title(loose):
+    if not loose or "|" not in loose:
+        return False
+    _, title = loose.split("|", 1)
+    if title in GENERIC_TITLES:
+        return False
+    if len(title) < 4 and " " not in title:
+        return False
+    return True
 
 
 def create_schema(conn):
@@ -267,14 +294,16 @@ def build_groups(events):
         for index in indexes[1:]:
             resolver.union(indexes[0], index)
 
-    spotify_backed_loose = {}
+    safe_loose = {}
     for loose, indexes in loose_keys.items():
         spotify_ids = {events[i]["spotify_track_id"] for i in indexes if events[i]["spotify_track_id"]}
         mbids = {events[i]["lastfm_track_mbid"] for i in indexes if events[i]["lastfm_track_mbid"]}
         albums = {norm(events[i]["album_name"]) for i in indexes if norm(events[i]["album_name"])}
         if len(spotify_ids) <= 1 and len(mbids) <= 1 and len(albums) <= 3:
-            spotify_backed_loose[loose] = indexes
-    for indexes in spotify_backed_loose.values():
+            safe_loose[loose] = indexes
+        elif safe_loose_title(loose) and len(spotify_ids) <= 25 and len(mbids) <= 8:
+            safe_loose[loose] = indexes
+    for indexes in safe_loose.values():
         for index in indexes[1:]:
             resolver.union(indexes[0], index)
 
