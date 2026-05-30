@@ -7,3 +7,5 @@ lastfm/
 spotify_extended_streaming_history/
 spotify_playlists_export/
 reports/
+playlist_weight_overrides.csv
+__pycache__/

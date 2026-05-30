@@ -1,22 +1,13 @@
 #!/usr/bin/env python3
 import csv
-import re
 import sqlite3
 from pathlib import Path
+from playlist_rules import classify_playlist
 
 
 ROOT = Path(__file__).resolve().parent
 DB_PATH = ROOT / "music.db"
 REPORT_DIR = ROOT / "reports"
-
-
-GENERATED_NAME_RE = re.compile(
-    r"\b(discover weekly|release radar|daily mix|radio|wrapped|top songs|spotify\.me|the sound of|the pulse of|needle|"
-    r"this is |official|hits|best of|complete collection|soundtrack|original motion picture soundtrack|deluxe|"
-    r"anniversary|remaster|now that'?s what i call music|topp 20)\b",
-    re.I,
-)
-ALBUMISH_RE = re.compile(r"\s[–-]\s|original motion picture soundtrack|deluxe|remaster|anniversary|complete edition", re.I)
 
 
 def write_csv(name, rows):
@@ -34,33 +25,6 @@ def write_csv(name, rows):
 
 def query(conn, sql, params=()):
     return [dict(row) for row in conn.execute(sql, params)]
-
-
-def classify_playlist(row):
-    name = row["name"] or ""
-    owner = row["owner_id"] or ""
-    tracks_total = row["tracks_total"] or 0
-    followers = row["followers_total"] or 0
-    reasons = []
-    if owner == "spotify":
-        reasons.append("spotify_owned")
-    if GENERATED_NAME_RE.search(name):
-        reasons.append("generated_or_editorial_name")
-    if ALBUMISH_RE.search(name):
-        reasons.append("album_or_soundtrack_name")
-    if followers >= 1000 and owner != "ktamas":
-        reasons.append("high_follower_external")
-    if tracks_total <= 15 and ALBUMISH_RE.search(name):
-        reasons.append("short_albumish_playlist")
-    if not reasons and owner == "ktamas":
-        bucket = "personal"
-    elif "spotify_owned" in reasons or "generated_or_editorial_name" in reasons or "high_follower_external" in reasons:
-        bucket = "weak_context"
-    elif "album_or_soundtrack_name" in reasons or "short_albumish_playlist" in reasons:
-        bucket = "album_or_collection"
-    else:
-        bucket = "unknown_external"
-    return bucket, ";".join(reasons)
 
 
 def write_playlist_classification(conn):
@@ -87,15 +51,16 @@ def write_playlist_classification(conn):
     )
     out = []
     for row in rows:
-        bucket, reasons = classify_playlist(row)
         item_rows = row["item_rows"] or 0
         listened_ratio = (row["items_with_listens"] / item_rows) if item_rows else 0
+        row = {**row, "listened_ratio": round(listened_ratio, 4)}
+        bucket, weight, reasons = classify_playlist(row)
         out.append(
             {
                 **row,
                 "bucket": bucket,
+                "auto_weight": weight,
                 "reasons": reasons,
-                "listened_ratio": round(listened_ratio, 4),
             }
         )
     return write_csv("playlist_classification.csv", out)

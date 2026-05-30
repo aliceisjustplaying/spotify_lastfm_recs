@@ -28,7 +28,9 @@ python3 pull_spotify_playlists.py
 python3 normalize_music_data.py
 python3 reconcile_tracks.py
 python3 qa_reconciliation.py
+python3 apply_playlist_weights.py
 ```
 
 The normalized database is written to `music.db`.
 Reconciliation and QA add canonical track tables to `music.db` and local CSV/Markdown reports under `reports/`.
+Playlist weighting writes `playlist_weights` to SQLite and creates an ignored `playlist_weight_overrides.csv` for manual edits.
