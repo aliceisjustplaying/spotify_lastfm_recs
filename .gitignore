@@ -1,0 +1,8 @@
+.env
+.spotify_token.json
+music.db
+music.db-*
+.DS_Store
+lastfm/
+spotify_extended_streaming_history/
+spotify_playlists_export/
